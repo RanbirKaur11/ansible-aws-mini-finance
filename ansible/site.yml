@@ -1,0 +1,57 @@
+# Play 1 - install nginx & git
+- name: Install nginx and git on web server
+  hosts: web
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install nginx
+      apt:
+        name:
+          - nginx
+          - git
+        state: present
+
+    - name: Ensure nginx is started and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+# Play 2 - deploy static site
+# Play 2 - deploy static site
+- name: Deploy mini-finance static site
+  hosts: web
+  become: yes
+  tasks:
+    - name: Remove existing web files
+      file:
+        path: /var/www/html
+        state: absent
+
+    - name: Recreate /var/www/html directory
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Configure Git safe directory
+      command: git config --global --add safe.directory /var/www/html
+      args:
+        creates: /root/.gitconfig
+
+    - name: Clone mini-finance static site repository
+      git:
+        repo: "https://github.com/RanbirKaur11/mini_finance.git"
+        dest: /var/www/html
+        version: main
+        force: yes
+
+    - name: Restart nginx to apply changes
+      service:
+        name: nginx
+        state: restarted
